@@ -2,6 +2,7 @@ const toPull = require('stream-to-pull-stream')
 const pull = require('pull-stream')
 const miss = require('mississippi')
 const test = require('tape')
+const deferDuplex = require('pull-defer/duplex')
 
 // pass
 test('node-stream simple', (t) => {
@@ -118,6 +119,23 @@ test('pull-stream toPull.transform minimal', (t) => {
     })
   )
 })
+
+// pass
+test('pull-stream deferred duplex source', (t) => {
+  const deferred = deferDuplex() 
+  pull(
+    deferred,
+    pull.collect((err, result) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+    
+  const { source } = createNodeStreams()
+  deferred.resolve(toPull.duplex(source))
+})
+
+
 
 function createNodeStreams () {
   const source = miss.from.obj((size, cb) => cb(new Error('dingdong')))
