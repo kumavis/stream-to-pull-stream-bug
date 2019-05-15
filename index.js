@@ -42,7 +42,6 @@ test('pull-stream simple', (t) => {
 test('pull-stream source as duplex', (t) => {
   const { source, sink } = setupTest()
   pull(
-    require('pull-defer').source(),
     toPull.duplex(source),
     toPull.sink(sink, (err) => {
       t.ok(err && err.message.includes('dingdong'), 'saw expected error')
