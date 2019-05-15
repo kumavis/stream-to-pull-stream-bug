@@ -5,12 +5,10 @@ const wrtc = require('wrtc')
 const miss = require('mississippi')
 const test = require('tape')
 
-
-test('readable-stream test', (t) => {
-  const { source, spy, sink } = setupTest()
+test('readable-stream simple', (t) => {
+  const { source, sink } = setupTest()
   miss.pipe(
     source,
-    spy, 
     sink,
     (err) => {
       t.ok(err && err.message.includes('dingdong'), 'saw expected error')
@@ -19,11 +17,61 @@ test('readable-stream test', (t) => {
   )
 })
 
-test('pull-stream test', (t) => {
-  const { source, spy, sink } = setupTest()
+test('readable-stream with through', (t) => {
+  const { source, transform, sink } = setupTest()
+  miss.pipe(
+    source,
+    transform,
+    sink,
+    (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    }
+  )
+})
+
+test('pull-stream simple', (t) => {
+  const { source, sink } = setupTest()
   pull(
     toPull.source(source),
-    toPull.duplex(spy),
+    toPull.sink(sink, (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+test('pull-stream source as duplex', (t) => {
+  const { source, sink } = setupTest()
+  pull(
+    require('pull-defer').source(),
+    toPull.duplex(source),
+    toPull.sink(sink, (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+// this fails because toPull.duplex does not propagate the error
+test('pull-stream with through as toPull.duplex', (t) => {
+  const { source, transform, sink } = setupTest()
+  pull(
+    toPull.source(source),
+    toPull.duplex(transform),
+    toPull.sink(sink, (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+// this fails because toPull.transform does not propagate the error
+test('pull-stream with through as toPull.transform', (t) => {
+  const { source, transform, sink } = setupTest()
+  pull(
+    toPull.source(source),
+    toPull.transform(transform),
     toPull.sink(sink, (err) => {
       t.ok(err && err.message.includes('dingdong'), 'saw expected error')
       t.end()
@@ -34,7 +82,7 @@ test('pull-stream test', (t) => {
 function setupTest () {
   const source = new SimplePeer({ wrtc })
 
-  const spy = miss.through.obj((chunk, enc, cb) => {
+  const transform = miss.through.obj((chunk, enc, cb) => {
     console.warn('mis.through unexpectedly saw chunk', chunk)
     cb(null, chunk)
   })
@@ -47,5 +95,5 @@ function setupTest () {
     source.destroy(new Error('dingdong'))
   }, 100)
 
-  return { source, spy, sink }
+  return { source, transform, sink }
 }
