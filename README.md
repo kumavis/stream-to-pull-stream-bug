@@ -16,6 +16,9 @@ miss.concat callback unexpectedly called with data: []
 
     ✖ saw expected error
     ---------------------
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/kumavis/stream-to-pull-stream-bug.svg)](https://greenkeeper.io/)
+
       operator: ok
       expected: true
       actual:   null
