@@ -79,6 +79,30 @@ test('pull-stream with through as toPull.transform', (t) => {
   )
 })
 
+test('pull-stream with pull-stream transform', (t) => {
+  const { source, sink } = setupTest()
+  pull(
+    toPull.source(source),
+    pull.map(x => x),
+    toPull.sink(sink, (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+test('pull-stream toPull.transform minimal', (t) => {
+  const transform = miss.through.obj((chunk, enc, cb) => cb(null, chunk))
+  pull(
+    pull.error(new Error('dingdong')),
+    toPull.transform(transform),
+    pull.collect((err, result) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
 function setupTest () {
   const source = new SimplePeer({ wrtc })
 
