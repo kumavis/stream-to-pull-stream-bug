@@ -3,8 +3,9 @@ const pull = require('pull-stream')
 const miss = require('mississippi')
 const test = require('tape')
 
-test('readable-stream simple', (t) => {
-  const { source, sink } = setupTest()
+// pass
+test('node-stream simple', (t) => {
+  const { source, sink } = createNodeStreams()
   miss.pipe(
     source,
     sink,
@@ -15,8 +16,9 @@ test('readable-stream simple', (t) => {
   )
 })
 
-test('readable-stream with through', (t) => {
-  const { source, transform, sink } = setupTest()
+// pass
+test('node-stream with through', (t) => {
+  const { source, transform, sink } = createNodeStreams()
   miss.pipe(
     source,
     transform,
@@ -28,8 +30,9 @@ test('readable-stream with through', (t) => {
   )
 })
 
+// pass
 test('pull-stream simple', (t) => {
-  const { source, sink } = setupTest()
+  const { source, sink } = createNodeStreams()
   pull(
     toPull.source(source),
     toPull.sink(sink, (err) => {
@@ -39,8 +42,9 @@ test('pull-stream simple', (t) => {
   )
 })
 
+// pass
 test('pull-stream source as duplex', (t) => {
-  const { source, sink } = setupTest()
+  const { source, sink } = createNodeStreams()
   pull(
     toPull.duplex(source),
     toPull.sink(sink, (err) => {
@@ -50,34 +54,9 @@ test('pull-stream source as duplex', (t) => {
   )
 })
 
-// this fails because toPull.duplex does not propagate the error
-test('pull-stream with through as toPull.duplex', (t) => {
-  const { source, transform, sink } = setupTest()
-  pull(
-    toPull.source(source),
-    toPull.duplex(transform),
-    toPull.sink(sink, (err) => {
-      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
-      t.end()
-    })
-  )
-})
-
-// this fails because toPull.transform does not propagate the error
-test('pull-stream with through as toPull.transform', (t) => {
-  const { source, transform, sink } = setupTest()
-  pull(
-    toPull.source(source),
-    toPull.transform(transform),
-    toPull.sink(sink, (err) => {
-      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
-      t.end()
-    })
-  )
-})
-
-test('pull-stream with pull-stream transform', (t) => {
-  const { source, sink } = setupTest()
+// pass
+test('pull-stream with pull.map', (t) => {
+  const { source, sink } = createNodeStreams()
   pull(
     toPull.source(source),
     pull.map(x => x),
@@ -88,6 +67,46 @@ test('pull-stream with pull-stream transform', (t) => {
   )
 })
 
+// fails: toPull.duplex does not propagate the error
+test('pull-stream with through as toPull.duplex', (t) => {
+  const { source, transform, sink } = createNodeStreams()
+  pull(
+    toPull.source(source),
+    toPull.duplex(transform),
+    toPull.sink(sink, (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+// fails: toPull.transform does not propagate the error
+test('pull-stream with through as toPull.transform', (t) => {
+  const { source, transform, sink } = createNodeStreams()
+  pull(
+    toPull.source(source),
+    toPull.transform(transform),
+    toPull.sink(sink, (err) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+// fail: toPull.duplex does not propagate the error
+test('pull-stream toPull.duplex minimal', (t) => {
+  const transform = miss.through.obj((chunk, enc, cb) => cb(null, chunk))
+  pull(
+    pull.error(new Error('dingdong')),
+    toPull.duplex(transform),
+    pull.collect((err, result) => {
+      t.ok(err && err.message.includes('dingdong'), 'saw expected error')
+      t.end()
+    })
+  )
+})
+
+// fail: toPull.transform does not propagate the error
 test('pull-stream toPull.transform minimal', (t) => {
   const transform = miss.through.obj((chunk, enc, cb) => cb(null, chunk))
   pull(
@@ -100,7 +119,7 @@ test('pull-stream toPull.transform minimal', (t) => {
   )
 })
 
-function setupTest () {
+function createNodeStreams () {
   const source = miss.from.obj((size, cb) => cb(new Error('dingdong')))
 
   const transform = miss.through.obj((chunk, enc, cb) => {
