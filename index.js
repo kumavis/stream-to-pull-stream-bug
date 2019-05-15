@@ -1,7 +1,5 @@
 const toPull = require('stream-to-pull-stream')
 const pull = require('pull-stream')
-const SimplePeer = require('simple-peer')
-const wrtc = require('wrtc')
 const miss = require('mississippi')
 const test = require('tape')
 
@@ -104,7 +102,7 @@ test('pull-stream toPull.transform minimal', (t) => {
 })
 
 function setupTest () {
-  const source = new SimplePeer({ wrtc })
+  const source = miss.from.obj((size, cb) => cb(new Error('dingdong')))
 
   const transform = miss.through.obj((chunk, enc, cb) => {
     console.warn('mis.through unexpectedly saw chunk', chunk)
@@ -114,10 +112,6 @@ function setupTest () {
   const sink = miss.concat({ object: true }, (result) => {
     console.warn('miss.concat callback unexpectedly called with data:', result)
   })
-
-  setTimeout(() => {
-    source.destroy(new Error('dingdong'))
-  }, 100)
 
   return { source, transform, sink }
 }
